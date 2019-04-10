@@ -1,14 +1,12 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao;
+package unificacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.MapaCodigoOrigemDestino;
+import unificacao.wrapper.MapaCodigoOrigemDestino;
 
 /**
- * DOCME
- *
  * @author Bruno Cattany
  * @since 07/04/2019
  */
-public abstract class AbstractUnificadorTabelaReferenciavel implements TabelaReferenciavel {
+public abstract class AbstractUnificadorCodigoOrigemDestinoMapeavel implements TabelaReferenciavel {
 
     final MapaCodigoOrigemDestino mapaCodigoOrigemDestino = new MapaCodigoOrigemDestino();
 

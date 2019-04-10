@@ -1,6 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.exception;
+package unificacao.exception;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.DirecaoConexao;
+import unificacao.enums.DirecaoConexao;
 
 /**
  * @author Bruno Cattany

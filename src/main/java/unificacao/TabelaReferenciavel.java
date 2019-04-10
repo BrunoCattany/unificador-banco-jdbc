@@ -1,6 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao;
+package unificacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.MapaCodigoOrigemDestino;
+import unificacao.wrapper.MapaCodigoOrigemDestino;
 
 /**
  * Representa uma tabela que é referenciada por outras, ou seja, outras possuem o seu código, ou seja ainda, possuem uma <b>foreign key</b>.
@@ -13,7 +13,7 @@ public interface TabelaReferenciavel {
     /**
      * Exemplo de implementação padrão deste método:
      * <pre>
-     *      final MapaCodigoOrigemDestino mapaCodigoOrigemDestino = new MapaCodigoOrigemDestino();
+     *     final MapaCodigoOrigemDestino mapaCodigoOrigemDestino = new MapaCodigoOrigemDestino();
      *
      *     {@literal @}Override
      *     public MapaCodigoOrigemDestino getMapCodigoOrigemDestino() {

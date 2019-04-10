@@ -1,10 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper;
-
-import java.util.Objects;
+package unificacao.wrapper;
 
 /**
- * DOCME
- *
  * @author Bruno Cattany
  * @since 07/04/2019
  */
@@ -20,13 +16,15 @@ abstract class CodigoUnificacao {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        CodigoUnificacao codigo = (CodigoUnificacao) o;
-        return Objects.equals(value, codigo.value);
+
+        CodigoUnificacao that = (CodigoUnificacao) o;
+
+        return value != null ? value.equals(that.value) : that.value == null;
+
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(value);
+        return value != null ? value.hashCode() : 0;
     }
-
 }

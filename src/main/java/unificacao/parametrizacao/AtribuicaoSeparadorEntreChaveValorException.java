@@ -1,6 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao;
+package unificacao.parametrizacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.exception.UnificadorGenericException;
+import unificacao.exception.UnificadorGenericException;
 
 /**
  * @author Bruno Cattany

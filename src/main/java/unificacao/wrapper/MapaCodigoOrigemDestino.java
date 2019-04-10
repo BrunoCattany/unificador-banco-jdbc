@@ -1,11 +1,9 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper;
+package unificacao.wrapper;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * DOCME
- *
  * @author Bruno Cattany
  * @since 07/04/2019
  */

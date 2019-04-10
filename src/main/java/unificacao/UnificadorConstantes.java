@@ -1,8 +1,10 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao;
+package unificacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.ConnectionUnificacao;
+import unificacao.wrapper.ConnectionUnificacao;
 
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorConstantes.OperacaoSQL.*;
+import static unificacao.UnificadorConstantes.OperacaoSQL.*;
+import static unificacao.UnificadorConstantes.PojoMethod.GET;
+import static unificacao.UnificadorConstantes.OperacaoSQL.*;
 
 /**
  * Constantes de uso exclusivo da classe {@link AbstractOrquestradorUnificadorDadosJDBC}.
@@ -10,13 +12,19 @@ import static br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorCons
  * @author Bruno Cattany
  * @since 03/04/2019
  */
-public class UnificadorConstantes {
+class UnificadorConstantes {
 
     // ============================== Utilitários ==============================
 
-    public static final String COLUNA_CODIGO = "codigo";
-    public static final String COLUNA_ID_EXTERNO = "idexterno";
-    public static final String FROM = " FROM ";
+    static final String COLUNA_CODIGO = "codigo";
+    static final String COLUNA_ID_EXTERNO = "idexterno";
+    static String ADD_COLUMN_COLUNA_ID_EXTERNO_INTEGER = " ADD COLUMN " + COLUNA_ID_EXTERNO + " INTEGER";
+
+    static final String NULL = "null";
+    static final String FROM = " FROM ";
+    static final String INSERT_INTO = " INSERT INTO ";
+    static final String ALTER_TABLE = " ALTER TABLE ";
+    static final String VALUES = " VALUES ";
     static final String ORDER_BY = " ORDER BY ";
     static final String MAX = " MAX ";
     static final String COUNT = " COUNT ";
@@ -54,6 +62,10 @@ public class UnificadorConstantes {
     static final String MSG_FALHA_CLOSE_CONNECTION = "Houve alguma falha para fechar a conexão!";
     static final String MSG_FALHA_NAO_FOI_POSSIVEL_IDENTIFICAR_unificador_FILHO = "Não foi possível identificar o unificador filho da rodada!"
             + "\nVerifique a implementação de 'AbstractOrquestradorUnificadorDadosJDBC.criarSequenciaOrquestradaunificadoresFilhos'";
+    static final String MSG_FALHA_LISTA_MSG_COLUNAS_SQL_VAZIA = "Lista de " + Unificavel.class.getSimpleName() + " vazia";
+    static final String MSG_FALHA_METODO_NAO_ENCONTRADO_VIA_REFLECTION = "Não consegui encontrar, ou não está público, o método %s, para o field %s";
+    static final String MSG_FALHA_INSTANCIA_MIGRADOR_NAO_ENCONTRADA = "Não consegui recuperar o migrador %s do mapa %s";
+    static final String MSG_FALHA_NAO_CONSEGUI_INVOCAR_METODO_GET_COLUNA_FK = "Não consegui invocar o método " + PojoMethod.GET + " do campo: %s";
 
     // ==== Mensagens de Informação
 
@@ -92,6 +104,11 @@ public class UnificadorConstantes {
         SELECT,
         UPDATE,
         INSERT
+    }
+
+    public enum PojoMethod {
+        GET,
+        SET
     }
 
 }

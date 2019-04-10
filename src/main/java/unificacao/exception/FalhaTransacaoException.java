@@ -1,4 +1,4 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.exception;
+package unificacao.exception;
 
 /**
  * Lançada quando algum problema durante a transação ocorrer.

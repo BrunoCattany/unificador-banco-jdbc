@@ -5,8 +5,6 @@ import java.util.List;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
- * DOCME
- *
  * @author Bruno Cattany
  * @since 06/04/2019
  */

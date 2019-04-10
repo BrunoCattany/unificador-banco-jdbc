@@ -1,17 +1,19 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao;
+package unificacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.DirecaoConexao;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.OperacaoDestinoTransacionalOpcao;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.exception.FalhaAbrirConexaoJDBCException;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.exception.FalhaTransacaoException;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.exception.UnificadorGenericException;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.exception.TabelaReferenciavelSemCodigoOrigemRetornavelException;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao.ConjuntoParametrosObrigatorioUnificacao;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao.ConjuntoParametrosObrigatorioUnificacaoFactory;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao.ParametroObrigatorioUnificacaoEnum;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.to.AuditoriaUnificacaoDadosTO;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.ConnectionUnificacao;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.MapaCodigoOrigemDestino;
+import unificacao.enums.DirecaoConexao;
+import unificacao.enums.OperacaoDestinoTransacionalOpcao;
+import unificacao.exception.CampoSemNomeColunaException;
+import unificacao.exception.FalhaAbrirConexaoJDBCException;
+import unificacao.exception.FalhaTransacaoException;
+import unificacao.exception.UnificadorGenericException;
+import unificacao.metadata.ChaveEstrangeiraFK;
+import unificacao.metadata.NomeColuna;
+import unificacao.parametrizacao.ConjuntoParametrosObrigatorioUnificacao;
+import unificacao.parametrizacao.ConjuntoParametrosObrigatorioUnificacaoFactory;
+import unificacao.parametrizacao.ParametroObrigatorioUnificacaoEnum;
+import unificacao.to.AuditoriaUnificacaoDadosTO;
+import unificacao.wrapper.ConnectionUnificacao;
+import unificacao.wrapper.MapaCodigoOrigemDestino;
 import negocio.comuns.utilitarias.Calendario;
 import negocio.comuns.utilitarias.Uteis;
 import negocio.comuns.utilitarias.info_execucao.InformacaoMaquinaExecutora;
@@ -19,16 +21,21 @@ import negocio.comuns.utilitarias.info_execucao.InformacaoMaquinaExecutoraFactor
 import org.postgresql.util.PSQLException;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorConstantes.*;
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorConstantes.OperacaoSQL.*;
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.enums.DirecaoConexao.DESTINO;
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.enums.DirecaoConexao.ORIGEM;
+import static unificacao.UnificadorConstantes.*;
+import static unificacao.UnificadorConstantes.OperacaoSQL.*;
+import static unificacao.UnificadorConstantes.PojoMethod.GET;
+import static unificacao.UnificadorConstantes.PojoMethod.SET;
+import static unificacao.enums.DirecaoConexao.DESTINO;
+import static unificacao.enums.DirecaoConexao.ORIGEM;
 import static java.lang.String.format;
 import static negocio.comuns.utilitarias.CronometroTempoThreadLocal.*;
 import static negocio.comuns.utilitarias.Uteis.logar;
@@ -87,19 +94,21 @@ public abstract class AbstractOrquestradorUnificadorDadosJDBC {
     // ============================== Objetos usados no processo da unificação ==============================
 
     /**
-     * DOCME DOUBT
+     * Representa o migrador que está sendo executado na rodada, este migrador, que veio de {@link #criarSequenciaOrquestradaunificadoresFilhos()}.
      */
     private UnificadorFilho unificadorFilhoExecucaoRodada;
 
     /**
-     * DOCME
+     * Responsável por manter em memória e fornecer em fácil acesso o {@link TabelaReferenciavel#getMapCodigoOrigemDestino()}, para que
+     * se possa fazer a unificação de {@link ChaveEstrangeiraFK}.
      */
-    private Integer ultimoCodigoTabelaDestinoExecucaoRodada;
-
-    private LinkedHashMap<Class<? extends UnificadorFilho>, UnificadorFilho> mapaunificadoresFilhos;
+    private LinkedHashMap<Class<? extends UnificadorFilho>, UnificadorFilho> mapaUnificadoresFilhos;
 
     // ============================== Entidades ==============================
 
+    /**
+     * TO responsável por guardar dados para uma futura auditoria.
+     */
     private AuditoriaUnificacaoDadosTO auditoriaunificacaoDados = new AuditoriaUnificacaoDadosTO();
 
     // ============================== Auxiliares ==============================
@@ -185,53 +194,101 @@ public abstract class AbstractOrquestradorUnificadorDadosJDBC {
     }
 
     /**
-     * A tabela que haverá a inserção, é mediante o {@link #unificadorFilhoExecucaoRodada}.
+     * </h2>Para uso deste método, é necessário respeitar a especificação detalhada em {@link Unificavel}.</h2>
      *
      * Este método auxiliar fará:
      *
      * <ul>
      * <li>
-     * 1. Consulta na tabela de {@link DirecaoConexao#DESTINO}
-     * </li> para saber qual é o último código.
-     * <li>
-     * 2. (Condicional) Caso o {@link #unificadorFilhoExecucaoRodada} for uma instância de {@link TabelaReferenciavel}, é criado um mapa
-     * para armazenar o código original e o código novo a ser gerado para o registro que está sendo unificado.
+     * 1. Consulta todos as colunas da instância <code>clazz</code> em questão, levando em consideração os campos que estão
+     * anotados com {@link NomeColuna}. Tal é realizado em {@link #consultarByNomeColuna(ConnectionUnificacao, Class)}.
      * </li>
      * <li>
-     * 3. (Condicional) Imediatamente posterior ao <b>passo 2</b>, se a condição for verdadeira, é criado uma coluna: {@link UnificadorConstantes#COLUNA_ID_EXTERNO}
-     * responsável por armazenar o código original da unificação.
+     * 2. Consulta na tabela de {@link DirecaoConexao#DESTINO} para saber qual é o último código, através de {@link #consultarUltimoCodigo(ConnectionUnificacao, String)}.
      * </li>
      * <li>
-     * 4. Realiza a unificação dos dados mediante a massa de dados em <code>colunasInseriveisSQL</code>.
+     * 2. Cria um mapa para armazenar o código original e o código novo a ser gerado para o registro que está sendo unificado.
+     * </li>
+     * <li>
+     * 4. Cria uma coluna: {@link UnificadorConstantes#COLUNA_ID_EXTERNO} responsável por armazenar o código original da unificação.
+     * </li>
+     * <li>
+     * 4. Realiza a unificação dos dados mediante a massa de dados em {@link #executarOperacoesInserirApartirUltimoCodigo(ConnectionUnificacao, String, String)}.
      * </li>
      * </ul>
      *
-     * @param conexaoDestino       que será inserido.
-     * @param colunasParaInserir   indica as colunas a serem inseridas, separadas por virgula.
-     *                             Este trecho será incluído na construção da instrução INSERT, por exemplo: <br><br>
-     *                             Dado a tabela pessoa, caso você informe <b>"nome, idade"</b>, isto resultará em -> <br>
-     *                             <b>INSERT INTO pessoa (codigo, <i>nome, idade</i>)</b>. <br><br>
-     *                             Vale ressaltar que {@link UnificadorConstantes#COLUNA_CODIGO} sempre será especificada.
-     * @param colunasInseriveisSQL uma lista de {@link ColunasInseriveisSQL}, ao qual será resgatado os valores a serem
-     *                             inseridos mediante {@link ColunasInseriveisSQL#colunasValorString()}
+     * @param conexaoDestino que será inserido.
+     * @param clazz          uma classe do tipo {@link Unificavel}, que será usada como base para recuperar os {@link NomeColuna}.
      */
-    public void inserirApartirUltimoCodigo(ConnectionUnificacao conexaoDestino,
-                                           String colunasParaInserir,
-                                           List<ColunasInseriveisSQL> colunasInseriveisSQL) throws Exception {
-        int ultimoCodigoTabelaDestino = consultarUltimoCodigo(conexaoDestino, unificadorFilhoExecucaoRodada.getNomeTabelaAlvo());
-        ultimoCodigoTabelaDestinoExecucaoRodada = ultimoCodigoTabelaDestino;
+    public void realizarUnificacaoViaReflection(ConnectionUnificacao conexaoOrigem,
+                                                ConnectionUnificacao conexaoDestino,
+                                                Class<? extends Unificavel> clazz) throws Exception {
+        final List<Unificavel> unificaveis = consultarByNomeColuna(conexaoOrigem, clazz);
 
-        final boolean devePreencherMapCodigoOrigemDestino = devePreencherMapCodigoOrigemDestino(colunasInseriveisSQL.get(0));
+        if (!unificaveis.isEmpty()) {
+            int ultimoCodigoTabelaDestino = consultarUltimoCodigo(conexaoDestino, unificadorFilhoExecucaoRodada.getNomeTabelaAlvo());
 
-        StringBuilder sb = new StringBuilder();
-        for (ColunasInseriveisSQL colunas : colunasInseriveisSQL) {
-            ultimoCodigoTabelaDestino++;
-            montarValoresInserirApartirUltimoCodigo(sb, colunas, ultimoCodigoTabelaDestino, devePreencherMapCodigoOrigemDestino);
+            StringBuilder sb = new StringBuilder();
+            for (Unificavel unificavel : unificaveis) {
+                ultimoCodigoTabelaDestino++;
+                montarValoresInserirApartirUltimoCodigo(sb, unificavel, ultimoCodigoTabelaDestino);
+            }
+
+            final String finalValues = retornarStringRemovendoUltimoConcatenador(sb.toString());
+
+            executarOperacoesInserirApartirUltimoCodigo(
+                    conexaoDestino,
+                    getCamposAnotadoComNomeColunasConcatenados(unificaveis.get(0).getClass()),
+                    finalValues
+            );
+        } else {
+            throw new UnificadorGenericException(MSG_FALHA_LISTA_MSG_COLUNAS_SQL_VAZIA);
+        }
+    }
+
+    /**
+     * Responsável por iterar todo o <code>resultSet</code> e criar uma lista do tipo <code>clazz</code> informado,
+     * com os valores preenchidos no mesmo, através da invocação do método {@link PojoMethod#SET} via <b>Reflection</b>.
+     */
+    private List<Unificavel> getListByIterateResultSet(ResultSet resultSet, Class<? extends Unificavel> clazz) throws SQLException {
+        List<Unificavel> listaUnificaveis = new ArrayList<Unificavel>();
+
+        final Map<String, Method> mapMetodosSet = mapearMetodosSetClasse(clazz);
+        final LinkedHashSet<Field> colunasAlvos = getCamposAnotadoComNomeColuna(clazz);
+
+        while (nextResult(resultSet)) {
+            try {
+                final Unificavel unificavelInstance = clazz.newInstance();
+
+                for (Field field : colunasAlvos) {
+                    Object value = getResultSetByType(resultSet, field);
+                    final Method method = mapMetodosSet.get(SET.name().toLowerCase() + field.getName().toLowerCase());
+
+                    if (method != null) {
+                        method.invoke(unificavelInstance, value);
+                    } else {
+                        throw new UnificadorGenericException(
+                                format(
+                                        MSG_FALHA_METODO_NAO_ENCONTRADO_VIA_REFLECTION,
+                                        SET,
+                                        field.getName()
+                                )
+                        );
+                    }
+                }
+
+                listaUnificaveis.add(unificavelInstance);
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+
         }
 
-        final String finalValues = sb.toString().replaceAll(", $", "");
-
-        _inserirApartirUltimoCodigo(conexaoDestino, colunasParaInserir, finalValues, devePreencherMapCodigoOrigemDestino);
+        return listaUnificaveis;
     }
 
     // ============================== Protected ==============================
@@ -263,9 +320,9 @@ public abstract class AbstractOrquestradorUnificadorDadosJDBC {
         try {
             executarProcedimentosAntesunificacao(conexaoOrigem, conexaoDestino);
 
-            mapaunificadoresFilhos = constuirMapaSequenciaunificadoresFilhos();
-            for (Class<? extends UnificadorFilho> clazz : mapaunificadoresFilhos.keySet()) {
-                unificadorFilhoExecucaoRodada = mapaunificadoresFilhos.get(clazz);
+            mapaUnificadoresFilhos = constuirMapaSequenciaunificadoresFilhos();
+            for (Class<? extends UnificadorFilho> clazz : mapaUnificadoresFilhos.keySet()) {
+                unificadorFilhoExecucaoRodada = mapaUnificadoresFilhos.get(clazz);
                 validarunificadorFilhoExecucaoRodada(unificadorFilhoExecucaoRodada);
 
                 final String nameunificadorFilho = unificadorFilhoExecucaoRodada.getClass().getSimpleName();
@@ -330,20 +387,16 @@ public abstract class AbstractOrquestradorUnificadorDadosJDBC {
         }
     }
 
-    /**
-     * @return <b>TRUE</b> se conseguiu preencher, ou seja, significa que trata-se de um unificador {@link TabelaReferenciavel} e que possui {@link CodigoOrigemRetornavel}.
-     */
-    private void preencherMapCodigoOrigemDestino(ColunasInseriveisSQL colunasInseriveisSQL, Integer codigoDestino) {
+    private void preencherMapCodigoOrigemDestino(Unificavel unificavel, Integer codigoDestino) {
         final TabelaReferenciavel tabelaReferenciavel = getunificadorFilhoExecucaoRodadaAsTabelaReferenciavel();
-        final CodigoOrigemRetornavel codigoOrigemRetornavel = getColunasInseriveisAsCodigoOrigemRetornavel(colunasInseriveisSQL);
+        final CodigoOrigemRetornavel codigoOrigemRetornavel = getColunasInseriveisAsCodigoOrigemRetornavel(unificavel);
 
         assert tabelaReferenciavel != null;
         assert codigoOrigemRetornavel != null;
 
         final MapaCodigoOrigemDestino mapCodigoOrigemDestino = tabelaReferenciavel.getMapCodigoOrigemDestino();
 
-        final Integer codigoOrigem = codigoOrigemRetornavel.getCodigoOrigem();
-        validarMatematicamenteCodigosunificacao(codigoOrigem, codigoDestino);
+        final Integer codigoOrigem = codigoOrigemRetornavel.getCodigo();
 
         mapCodigoOrigemDestino.putCodigoDestinoChaveadoPorCodigoOrigem(codigoOrigem, codigoDestino);
     }
@@ -541,29 +594,6 @@ public abstract class AbstractOrquestradorUnificadorDadosJDBC {
         }
     }
 
-    /**
-     * Teoricamente em uma operação de unificação aonde a consulta de origem foi feito ordenado pelo código,
-     * o <code>codigoDestino</code> sempre:
-     *
-     * <ul>
-     * <li>Será maior que o <code>codigoOrigem</code></li>
-     * <li>Seu valor subtraído pelo <code>codigoOrigem</code>, será sempre o {@link #ultimoCodigoTabelaDestinoExecucaoRodada}</li>
-     * </ul>
-     *
-     * @throws UnificadorGenericException quando o resultado da subtração for diferente de {@link #ultimoCodigoTabelaDestinoExecucaoRodada}.
-     */
-    private void validarMatematicamenteCodigosunificacao(Integer codigoOrigem, Integer codigoDestino) throws UnificadorGenericException {
-        if (codigoDestino - codigoOrigem != ultimoCodigoTabelaDestinoExecucaoRodada) {
-            throw new UnificadorGenericException(
-                    format(
-                            "O código de origem e de destino não correspondem entre si, dado a sequência que deveriam seguir."
-                                    + "\nO código de destino (%s) menos o código de origem (%s), deveria ser a diferença do último código consultado, que foi (%s).",
-                            codigoDestino, codigoOrigem, ultimoCodigoTabelaDestinoExecucaoRodada
-                    )
-            );
-        }
-    }
-
     private void logarArgumentosDefault(String[] args) {
         String arrayCadaArgsEmUmaLinha = Arrays.toString(args).replace(",", ",\n");
         logar(MSG_INFO_PARAMETROS_ARGUMENTOS, arrayCadaArgsEmUmaLinha);
@@ -597,74 +627,240 @@ public abstract class AbstractOrquestradorUnificadorDadosJDBC {
         return null;
     }
 
-    private CodigoOrigemRetornavel getColunasInseriveisAsCodigoOrigemRetornavel(ColunasInseriveisSQL colunasInseriveisSQL) {
-        if (colunasInseriveisSQL instanceof CodigoOrigemRetornavel) {
-            return (CodigoOrigemRetornavel) colunasInseriveisSQL;
+    private CodigoOrigemRetornavel getColunasInseriveisAsCodigoOrigemRetornavel(Unificavel unificavel) {
+        if (unificavel instanceof CodigoOrigemRetornavel) {
+            return (CodigoOrigemRetornavel) unificavel;
         }
 
         return null;
     }
 
-    private MapaCodigoOrigemDestino getMapaCodigoOrigemDestinounificadorFilho() {
-        final TabelaReferenciavel tabelaRefenciavel = getunificadorFilhoExecucaoRodadaAsTabelaReferenciavel();
-
-        return tabelaRefenciavel != null ? tabelaRefenciavel.getMapCodigoOrigemDestino() : null;
-    }
-
-    private void montarValoresInserirApartirUltimoCodigo(StringBuilder sb, ColunasInseriveisSQL colunas, int ultimoCodigoTabelaDestino,
-                                                         boolean devePreencherMapCodigoOrigemDestino) {
-        if (devePreencherMapCodigoOrigemDestino) {
-            preencherMapCodigoOrigemDestino(colunas, ultimoCodigoTabelaDestino);
-        }
+    private void montarValoresInserirApartirUltimoCodigo(StringBuilder sb, Unificavel unificavel, int ultimoCodigoTabelaDestino) {
+        preencherMapCodigoOrigemDestino(unificavel, ultimoCodigoTabelaDestino);
 
         sb.append("(")
                 .append(ultimoCodigoTabelaDestino).append(", ")
-                .append(colunas.colunasValorString());
-
-        if (devePreencherMapCodigoOrigemDestino) {
-            sb.append(", ").append(getColunasInseriveisAsCodigoOrigemRetornavel(colunas).getCodigoOrigem());
-        }
-
-        sb.append("), ");
+                .append(getValoresCamposAnotadoComNomeColunasConcatenadosParaSQL(unificavel)).append(", ")
+                .append(getColunasInseriveisAsCodigoOrigemRetornavel(unificavel).getCodigo())
+                .append("), ");
     }
 
-    private void _inserirApartirUltimoCodigo(ConnectionUnificacao conexaoDestino,
-                                             String colunasParaInserir,
-                                             String finalValues,
-                                             boolean devePreencherMapCodigoOrigemDestino) throws Exception {
-        if (devePreencherMapCodigoOrigemDestino) {
-            final String descricaoCriacaoColuna = "Criando a coluna " + COLUNA_ID_EXTERNO + " em " + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo() + ".";
-            executarUpdateComFeedback(descricaoCriacaoColuna, conexaoDestino,
-                    "ALTER TABLE " + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo() + " ADD COLUMN " + COLUNA_ID_EXTERNO + " INTEGER"
-            );
-        }
+    private List<Unificavel> consultarByNomeColuna(ConnectionUnificacao conexaoOrigem, Class<? extends Unificavel> clazz) throws Exception {
+        ResultSet rs = executarConsultaComFeedbackOrdenadoCrescentementePeloCodigo(
+                "Consultando todos os registros de " + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo() + ".",
+                conexaoOrigem,
+                SELECT + " " + getCamposAnotadoComNomeColunasConcatenados(clazz) + FROM + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo());
+
+        return getListByIterateResultSet(rs, clazz);
+    }
+
+    private void executarOperacoesInserirApartirUltimoCodigo(ConnectionUnificacao conexaoDestino,
+                                                             String colunasParaInserir,
+                                                             String finalValues) throws Exception {
+        final String descricaoCriacaoColuna = "Criando a coluna " + COLUNA_ID_EXTERNO + " em " + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo() + ".";
+        executarUpdateComFeedback(descricaoCriacaoColuna, conexaoDestino,
+                ALTER_TABLE + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo() + ADD_COLUMN_COLUNA_ID_EXTERNO_INTEGER
+        );
 
         final String descricaoInsercaoRegistros = "Inserindo registros em '" + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo() + "'.";
-        final String colunasParaInserirFinal = devePreencherMapCodigoOrigemDestino ?
-                " (codigo, " + colunasParaInserir + ", " + COLUNA_ID_EXTERNO + ")"
-                : " (codigo, " + colunasParaInserir + ")";
+        final String colunasParaInserirFinal = " (" + colunasParaInserir + ", " + COLUNA_ID_EXTERNO + ")";
 
         executarInsertComFeedback(descricaoInsercaoRegistros, conexaoDestino,
-                "INSERT INTO " + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo() + colunasParaInserirFinal + " VALUES " + finalValues
+                INSERT_INTO + unificadorFilhoExecucaoRodada.getNomeTabelaAlvo() + colunasParaInserirFinal + VALUES + finalValues
         );
     }
 
     /**
-     * @return <b>TRUE</b> se conseguiu preencher, ou seja, significa que trata-se de um unificador {@link TabelaReferenciavel} e que possui {@link CodigoOrigemRetornavel}.
+     * @return os valores da annotation {@link NomeColuna} dos campos de {@link Unificavel}.
      */
-    private boolean devePreencherMapCodigoOrigemDestino(ColunasInseriveisSQL colunasInseriveisSQL) {
-        final TabelaReferenciavel tabelaReferenciavel = getunificadorFilhoExecucaoRodadaAsTabelaReferenciavel();
-        final CodigoOrigemRetornavel codigoOrigemRetornavel = getColunasInseriveisAsCodigoOrigemRetornavel(colunasInseriveisSQL);
+    private String getCamposAnotadoComNomeColunasConcatenados(Class<? extends Unificavel> clazz) {
+        StringBuilder sb = new StringBuilder();
 
-        if (tabelaReferenciavel != null) {
-            if (codigoOrigemRetornavel == null) {
-                throw new TabelaReferenciavelSemCodigoOrigemRetornavelException(unificadorFilhoExecucaoRodada);
-            }
-
-            return true;
+        for (String nomeColunasAlvo : getCamposAnotadoComNomeColunas(clazz)) {
+            sb.append(nomeColunasAlvo).append(", ");
         }
 
-        return false;
+        return retornarStringRemovendoUltimoConcatenador(sb.toString());
+    }
+
+    /**
+     * @return os valores dos campos de {@link Unificavel} que estão anotados com {@link NomeColuna}.
+     */
+    private String getValoresCamposAnotadoComNomeColunasConcatenadosParaSQL(Unificavel unificavel) {
+        StringBuilder sb = new StringBuilder();
+        final Class<? extends Unificavel> clazz = unificavel.getClass();
+
+        final Map<String, Method> mapMetodosGet = mapearMetodosGetClasse(clazz);
+
+        for (Field field : getCamposAnotadoComNomeColuna(clazz)) {
+            if (!field.getName().equalsIgnoreCase(COLUNA_CODIGO)) {
+                getValorCampoAnotadoParaSQL(sb, field, unificavel, mapMetodosGet);
+            }
+        }
+
+        return retornarStringRemovendoUltimoConcatenador(sb.toString());
+    }
+
+    private void getValorCampoAnotadoParaSQL(StringBuilder sb, Field field, Unificavel unificavel,
+                                             Map<String, Method> mapMetodosGet) {
+        final ChaveEstrangeiraFK campoChaveEstrangeira = field.getAnnotation(ChaveEstrangeiraFK.class);
+        if (campoChaveEstrangeira != null) {
+            final UnificadorFilho unificadorFilho = mapaUnificadoresFilhos.get(campoChaveEstrangeira.tabelaReferenciavelName());
+
+            if (unificadorFilho != null) {
+                final Integer valorCampoChaveEstrangeiraFK = getValorCampoChaveEstrangeiraFK(unificavel, mapMetodosGet, field);
+
+                if (valorCampoChaveEstrangeiraFK != 0) { // 0 significa que está NULL no banco
+                    final Integer codigoOrigemUnificado = ((TabelaReferenciavel) unificadorFilho)
+                            .getMapCodigoOrigemDestino()
+                            .getPorCodigoOrigem(valorCampoChaveEstrangeiraFK);
+
+                    sb.append(codigoOrigemUnificado);
+                } else {
+                    sb.append(NULL);
+                }
+            } else {
+                throw new UnificadorGenericException(
+                        format(
+                                MSG_FALHA_INSTANCIA_MIGRADOR_NAO_ENCONTRADA,
+                                campoChaveEstrangeira.tabelaReferenciavelName(),
+                                mapaUnificadoresFilhos
+                        )
+                );
+            }
+
+        } else {
+            sb.append(returnValueInSqlByType(unificavel, field, mapMetodosGet));
+        }
+
+        sb.append(", ");
+    }
+
+    private Integer getValorCampoChaveEstrangeiraFK(Unificavel unificavel, Map<String, Method> mapMetodosGet, Field field) {
+        try {
+            return (Integer) mapMetodosGet.get(GET.name().toLowerCase() + field.getName().toLowerCase()).invoke(unificavel);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        throw new UnificadorGenericException(
+                format(
+                        MSG_FALHA_NAO_CONSEGUI_INVOCAR_METODO_GET_COLUNA_FK,
+                        field.getName()
+                )
+        );
+    }
+
+    private LinkedHashSet<String> getCamposAnotadoComNomeColunas(Class<? extends Unificavel> clazz) {
+        LinkedHashSet<String> colunas = new LinkedHashSet<String>();
+
+        for (Field field : getCamposAnotadoComNomeColuna(clazz)) {
+            colunas.add(
+                    field.getAnnotation(NomeColuna.class).value()
+            );
+        }
+
+        return colunas;
+    }
+
+    private LinkedHashSet<Field> getCamposAnotadoComNomeColuna(Class<? extends Unificavel> clazz) {
+        LinkedHashSet<Field> campos = new LinkedHashSet<Field>();
+
+        for (Field declaredField : clazz.getDeclaredFields()) {
+            final NomeColuna nomeColuna = declaredField.getAnnotation(NomeColuna.class);
+
+            if (nomeColuna != null) {
+                campos.add(declaredField);
+            } else if (isNotSintetico(declaredField)) {
+                throw new CampoSemNomeColunaException(clazz, declaredField);
+            }
+        }
+
+        return campos;
+    }
+
+    /**
+     * @see <a href="https://javapapers.com/core-java/java-synthetic-class-method-field/">Veja sobre métodos sintéticos.</a>
+     */
+    private boolean isNotSintetico(Field declaredField) {
+        return !declaredField.isSynthetic();
+    }
+
+    private String retornarStringRemovendoUltimoConcatenador(String string) {
+        return string.replaceAll(", $", "");
+    }
+
+    private Object getResultSetByType(ResultSet resultSet, Field field) throws SQLException {
+        final String valueFromAnnotation = field.getAnnotation(NomeColuna.class).value();
+
+        if (field.getType().equals(String.class)) {
+            return resultSet.getString(valueFromAnnotation);
+        } else if (field.getType().equals(Integer.class)) {
+            return resultSet.getInt(valueFromAnnotation);
+        } else if (field.getType().equals(Date.class)) {
+            return resultSet.getTimestamp(valueFromAnnotation);
+        } else if (field.getType().equals(Boolean.class)) {
+            return resultSet.getBoolean(valueFromAnnotation);
+        }
+
+        return null;
+    }
+
+    private String returnValueInSqlByType(Unificavel unificavel, Field field, Map<String, Method> mapMetodosGet) {
+        final Method method = mapMetodosGet.get(GET.name().toLowerCase() + field.getName().toLowerCase());
+        try {
+            if (method != null) {
+                final Object value = method.invoke(unificavel);
+
+                if (value != null) {
+                    if (field.getType().equals(String.class)) {
+                        return "'" + value + "'";
+                    } else if (field.getType().equals(Integer.class)) {
+                        return value.toString();
+                    } else if (field.getType().equals(Date.class)) {
+                        return "'" + value + "'";
+                    } else if (field.getType().equals(Boolean.class)) {
+                        return value.toString();
+                    }
+                }
+            } else {
+                throw new UnificadorGenericException(
+                        format(
+                                MSG_FALHA_METODO_NAO_ENCONTRADO_VIA_REFLECTION,
+                                GET,
+                                field.getName()
+                        )
+                );
+            }
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private Map<String, Method> mapearMetodosGetClasse(Class<? extends Unificavel> clazz) {
+        return _mapearMetodosClasse(clazz, GET);
+    }
+
+    private Map<String, Method> mapearMetodosSetClasse(Class<? extends Unificavel> clazz) {
+        return _mapearMetodosClasse(clazz, SET);
+    }
+
+    private Map<String, Method> _mapearMetodosClasse(Class<? extends Unificavel> clazz, PojoMethod pojoMethod) {
+        Map<String, Method> map = new HashMap<String, Method>();
+
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.getName().startsWith(pojoMethod.name().toLowerCase())) {
+                map.put(method.getName().toLowerCase(), method);
+            }
+        }
+
+        return map;
     }
 
 }

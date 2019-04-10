@@ -1,6 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao;
+package unificacao.parametrizacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.OperacaoDestinoTransacionalOpcao;
+import unificacao.enums.OperacaoDestinoTransacionalOpcao;
 
 /**
  * Responsável por guardar o valor que representa um conjunto de {@link ParametroObrigatorioUnificacaoEnum}.

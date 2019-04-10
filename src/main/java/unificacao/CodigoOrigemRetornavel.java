@@ -1,6 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao;
+package unificacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.DirecaoConexao;
+import unificacao.enums.DirecaoConexao;
 
 /**
  * Representa um registro que seja da {@link DirecaoConexao#ORIGEM} e que é possível retornar a {@link UnificadorConstantes#COLUNA_CODIGO}.
@@ -10,5 +10,5 @@ import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.DirecaoConexao;
  */
 public interface CodigoOrigemRetornavel {
 
-    Integer getCodigoOrigem();
+    Integer getCodigo();
 }

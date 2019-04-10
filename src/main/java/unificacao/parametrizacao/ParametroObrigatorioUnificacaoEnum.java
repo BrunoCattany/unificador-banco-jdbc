@@ -1,11 +1,11 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao;
+package unificacao.parametrizacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.AbstractOrquestradorUnificadorDadosJDBC;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.OperacaoDestinoTransacionalOpcao;
+import unificacao.AbstractOrquestradorUnificadorDadosJDBC;
+import unificacao.enums.OperacaoDestinoTransacionalOpcao;
 import negocio.comuns.utilitarias.RecuperadorEnumPadrao;
 import negocio.comuns.utilitarias.ValorRecuperavel;
 
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.enums.OperacaoDestinoTransacionalOpcao.*;
+import static unificacao.enums.OperacaoDestinoTransacionalOpcao.*;
 
 /**
  * Responsável por conter os parâmetros obrigatórios para o funcionamento padrão da classe {@link AbstractOrquestradorUnificadorDadosJDBC}.

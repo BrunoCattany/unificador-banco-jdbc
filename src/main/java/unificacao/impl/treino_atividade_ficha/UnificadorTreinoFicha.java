@@ -1,25 +1,22 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.impl.treino_atividade_ficha;
+package unificacao.impl.treino_atividade_ficha;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.ColunasInseriveisSQL;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorFilho;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.ConnectionUnificacao;
+import unificacao.AbstractUnificadorCodigoOrigemDestinoMapeavel;
+import unificacao.CodigoOrigemRetornavel;
+import unificacao.UnificadorFilho;
+import unificacao.Unificavel;
+import unificacao.metadata.ChaveEstrangeiraFK;
+import unificacao.metadata.NomeColuna;
+import unificacao.wrapper.ConnectionUnificacao;
 
-import java.sql.ResultSet;
 import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorConstantes.COLUNA_CODIGO;
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorConstantes.FROM;
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorConstantes.OperacaoSQL.SELECT;
 
 /**
- * DOCME
+ * Deve realizar a unificação da tabela 'ficha' do módulo do TreinoWeb.
  *
  * @author Bruno Cattany
  * @since 07/04/2019
  */
-public class UnificadorTreinoFicha implements UnificadorFilho<UnificadorTreinoAtividadesImpl> {
+public class UnificadorTreinoFicha extends AbstractUnificadorCodigoOrigemDestinoMapeavel implements UnificadorFilho<UnificadorTreinoAtividadesImpl> {
 
     @Override
     public String getNomeTabelaAlvo() {
@@ -28,65 +25,99 @@ public class UnificadorTreinoFicha implements UnificadorFilho<UnificadorTreinoAt
 
     @Override
     public void executar(UnificadorTreinoAtividadesImpl unificadorOrquestrador, ConnectionUnificacao conexaoOrigem, ConnectionUnificacao conexaoDestino) throws Exception {
-        List<ColunasInseriveisSQL> categoriasFichas = consultarFichasOrigem(unificadorOrquestrador, conexaoOrigem);
+        unificadorOrquestrador.realizarUnificacaoViaReflection(conexaoOrigem, conexaoDestino, Ficha.class);
     }
 
-    private List<ColunasInseriveisSQL> consultarFichasOrigem(UnificadorTreinoAtividadesImpl unificador,
-                                                             ConnectionUnificacao conexaoOrigem) throws Exception {
-        ResultSet rs = unificador.executarConsultaComFeedbackOrdenadoCrescentementePeloCodigo("Consultando todos os registros de 'categoriasficha'.", conexaoOrigem,
-                SELECT + " " + COLUNA_CODIGO + ", nome " + FROM + getNomeTabelaAlvo());
+    public static class Ficha implements Unificavel, CodigoOrigemRetornavel {
 
-        List<ColunasInseriveisSQL> fichas = new LinkedList<ColunasInseriveisSQL>();
-        while (unificador.nextResult(rs)) {
-            fichas.add(
-                    new Ficha(
-                            rs.getInt(COLUNA_CODIGO),
-                            rs.getBoolean("ativo"),
-                            rs.getString("mensagemAluno"),
-                            rs.getString("nome"),
-                            rs.getDate("ultimaexecucao"),
-                            rs.getBoolean("usarcomopredefinida"),
-                            rs.getInt("versao"),
-                            0,
-                            0 // STOPHERE
-                    )
-            );
-        }
-
-        return fichas;
-    }
-
-    private class Ficha implements ColunasInseriveisSQL {
-
+        @NomeColuna("codigo")
         private Integer codigo;
-        private Boolean ativo;
-        private String mensagemAluno;
-        private String nome;
-        private Date ultimaExecucao;
-        private Boolean usarComoPredefinida;
-        private Integer versao;
-        private Integer categoriaCodigo;
-        private Integer nivelCodigo;
 
-        public Ficha(Integer codigo, Boolean ativo, String mensagemAluno, String nome,
-                     Date ultimaExecucao, Boolean usarComoPredefinida, Integer versao, Integer categoriaCodigo, Integer nivelCodigo) {
-            this.codigo = codigo;
-            this.ativo = ativo;
-            this.mensagemAluno = mensagemAluno;
-            this.nome = nome;
-            this.ultimaExecucao = ultimaExecucao;
-            this.usarComoPredefinida = usarComoPredefinida;
-            this.versao = versao;
-            this.categoriaCodigo = categoriaCodigo;
-            this.nivelCodigo = nivelCodigo;
-        }
+        @NomeColuna("ativo")
+        private Boolean ativo;
+
+        @NomeColuna("mensagemaluno")
+        private String mensagemAluno;
+
+        @NomeColuna("nome")
+        private String nome;
+
+        @NomeColuna("ultimaexecucao")
+        private Date ultimaExecucao;
+
+        @NomeColuna("usarcomopredefinida")
+        private Boolean usarComoPredefinida;
+
+        @NomeColuna("versao")
+        private Integer versao;
+
+        @NomeColuna("categoria_codigo")
+        @ChaveEstrangeiraFK(tabelaReferenciavelName = UnificadorTreinoCategoriaFicha.class)
+        private Integer categoriaCodigo;
 
         @Override
-        public String colunasValorString() {
-            return ativo + ", '" + mensagemAluno + "'" + ", '" + nome + "', '" + ultimaExecucao + "', " + usarComoPredefinida
-                    + ", " + versao + ", " + categoriaCodigo + ", " + nivelCodigo;
+        public Integer getCodigo() {
+            return codigo;
         }
 
-    }
+        public void setCodigo(Integer codigo) {
+            this.codigo = codigo;
+        }
 
+        public Boolean getAtivo() {
+            return ativo;
+        }
+
+        public void setAtivo(Boolean ativo) {
+            this.ativo = ativo;
+        }
+
+        public String getMensagemAluno() {
+            return mensagemAluno;
+        }
+
+        public void setMensagemAluno(String mensagemAluno) {
+            this.mensagemAluno = mensagemAluno;
+        }
+
+        public String getNome() {
+            return nome;
+        }
+
+        public void setNome(String nome) {
+            this.nome = nome;
+        }
+
+        public Date getUltimaExecucao() {
+            return ultimaExecucao;
+        }
+
+        public void setUltimaExecucao(Date ultimaExecucao) {
+            this.ultimaExecucao = ultimaExecucao;
+        }
+
+        public Boolean getUsarComoPredefinida() {
+            return usarComoPredefinida;
+        }
+
+        public void setUsarComoPredefinida(Boolean usarComoPredefinida) {
+            this.usarComoPredefinida = usarComoPredefinida;
+        }
+
+        public Integer getVersao() {
+            return versao;
+        }
+
+        public void setVersao(Integer versao) {
+            this.versao = versao;
+        }
+
+        public Integer getCategoriaCodigo() {
+            return categoriaCodigo;
+        }
+
+        public void setCategoriaCodigo(Integer categoriaCodigo) {
+            this.categoriaCodigo = categoriaCodigo;
+        }
+    }
 }

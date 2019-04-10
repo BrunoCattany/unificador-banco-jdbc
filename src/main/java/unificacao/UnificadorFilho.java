@@ -1,7 +1,7 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao;
+package unificacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao.ParametroObrigatorioUnificacaoEnum;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.ConnectionUnificacao;
+import unificacao.parametrizacao.ParametroObrigatorioUnificacaoEnum;
+import unificacao.wrapper.ConnectionUnificacao;
 
 /**
  * Representa a parte da execução de uma unificação completa, ou seja, parte de uma execução de uma instância de {@link AbstractOrquestradorUnificadorDadosJDBC}. <br>
@@ -16,7 +16,7 @@ import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.ConnectionUni
 public interface UnificadorFilho<P extends AbstractOrquestradorUnificadorDadosJDBC> {
 
     /**
-     * DOCME
+     * @return Deve retornar a tabela ao qual o {@link UnificadorFilho} em questão realizará a unificação.
      */
     String getNomeTabelaAlvo();
 
@@ -24,20 +24,20 @@ public interface UnificadorFilho<P extends AbstractOrquestradorUnificadorDadosJD
      * Deve conter e executar os scripts de unificação.
      *
      * @param unificadorOrquestrador representa o orquestrador da unificação em si e e define a ordem de excecução dos unificadores filhos, mediante {@link AbstractOrquestradorUnificadorDadosJDBC#criarSequenciaOrquestradaunificadoresFilhos()}.
-     * @param conexaoOrigem        criado a partir dos parâmetros informado nos argumentos:
-     *                             <ul>
-     *                             <li>{@link ParametroObrigatorioUnificacaoEnum#HOST_AND_PORT_ORIGEM}</li>
-     *                             <li>{@link ParametroObrigatorioUnificacaoEnum#DATABASE_NAME_ORIGEM}</li>
-     *                             <li>{@link ParametroObrigatorioUnificacaoEnum#USER_DATABASE_ORIGEM}</li>
-     *                             <li>{@link ParametroObrigatorioUnificacaoEnum#PASSWORD_DATABASE_ORIGEM}</li>
-     *                             </ul>
-     * @param conexaoDestino       criado a partir dos parâmetros informado nos argumentos:
-     *                             <ul>
-     *                             <li>{@link ParametroObrigatorioUnificacaoEnum#HOST_AND_PORT_DESTINO}</li>
-     *                             <li>{@link ParametroObrigatorioUnificacaoEnum#DATABASE_NAME_DESTINO}</li>
-     *                             <li>{@link ParametroObrigatorioUnificacaoEnum#USER_DATABASE_DESTINO}</li>
-     *                             <li>{@link ParametroObrigatorioUnificacaoEnum#PASSWORD_DATABASE_DESTINO}</li>
-     *                             </ul>
+     * @param conexaoOrigem          criado a partir dos parâmetros informado nos argumentos:
+     *                               <ul>
+     *                               <li>{@link ParametroObrigatorioUnificacaoEnum#HOST_AND_PORT_ORIGEM}</li>
+     *                               <li>{@link ParametroObrigatorioUnificacaoEnum#DATABASE_NAME_ORIGEM}</li>
+     *                               <li>{@link ParametroObrigatorioUnificacaoEnum#USER_DATABASE_ORIGEM}</li>
+     *                               <li>{@link ParametroObrigatorioUnificacaoEnum#PASSWORD_DATABASE_ORIGEM}</li>
+     *                               </ul>
+     * @param conexaoDestino         criado a partir dos parâmetros informado nos argumentos:
+     *                               <ul>
+     *                               <li>{@link ParametroObrigatorioUnificacaoEnum#HOST_AND_PORT_DESTINO}</li>
+     *                               <li>{@link ParametroObrigatorioUnificacaoEnum#DATABASE_NAME_DESTINO}</li>
+     *                               <li>{@link ParametroObrigatorioUnificacaoEnum#USER_DATABASE_DESTINO}</li>
+     *                               <li>{@link ParametroObrigatorioUnificacaoEnum#PASSWORD_DATABASE_DESTINO}</li>
+     *                               </ul>
      *
      * @throws Exception quando
      */

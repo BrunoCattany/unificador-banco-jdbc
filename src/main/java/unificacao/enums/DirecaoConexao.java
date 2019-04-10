@@ -1,6 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.enums;
+package unificacao.enums;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.ConnectionUnificacao;
+import unificacao.wrapper.ConnectionUnificacao;
 
 /**
  * Classifica uma {@link ConnectionUnificacao}.

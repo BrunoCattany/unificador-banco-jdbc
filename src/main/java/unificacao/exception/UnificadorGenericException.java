@@ -1,6 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.exception;
+package unificacao.exception;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.AbstractOrquestradorUnificadorDadosJDBC;
+import unificacao.AbstractOrquestradorUnificadorDadosJDBC;
 
 /**
  * Exceção genérica do módulo de unificação de dados usando JPA, sob o controle da classe {@link AbstractOrquestradorUnificadorDadosJDBC}.

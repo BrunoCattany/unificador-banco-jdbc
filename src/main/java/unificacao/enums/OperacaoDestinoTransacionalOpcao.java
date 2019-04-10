@@ -1,7 +1,8 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.enums;
+package unificacao.enums;
 
 import negocio.comuns.utilitarias.RecuperadorEnumPadrao;
 import negocio.comuns.utilitarias.ValorRecuperavel;
+import util.recuperador_enum.RecuperadorEnumPadrao;
 
 /**
  * Responsável por definir como será a transação na conexão de {@link DirecaoConexao#DESTINO}.

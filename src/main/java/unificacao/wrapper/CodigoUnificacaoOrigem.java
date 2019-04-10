@@ -1,4 +1,4 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper;
+package unificacao.wrapper;
 
 /**
  * @author Bruno Cattany

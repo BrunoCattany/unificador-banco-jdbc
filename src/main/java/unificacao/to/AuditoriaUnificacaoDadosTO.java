@@ -1,8 +1,8 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.to;
+package unificacao.to;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.AbstractOrquestradorUnificadorDadosJDBC;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorFilho;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper.ConnectionUnificacao;
+import unificacao.AbstractOrquestradorUnificadorDadosJDBC;
+import unificacao.UnificadorFilho;
+import unificacao.wrapper.ConnectionUnificacao;
 
 import java.util.Date;
 import java.util.LinkedList;

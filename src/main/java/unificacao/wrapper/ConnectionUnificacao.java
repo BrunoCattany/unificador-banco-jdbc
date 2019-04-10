@@ -1,6 +1,6 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.wrapper;
+package unificacao.wrapper;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.DirecaoConexao;
+import unificacao.enums.DirecaoConexao;
 
 import java.sql.Connection;
 

@@ -1,7 +1,7 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.impl.treino_atividade_ficha;
+package unificacao.impl.treino_atividade_ficha;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.AbstractOrquestradorUnificadorDadosJDBC;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.UnificadorFilho;
+import unificacao.AbstractOrquestradorUnificadorDadosJDBC;
+import unificacao.UnificadorFilho;
 
 import java.util.LinkedHashSet;
 
@@ -23,7 +23,7 @@ public class UnificadorTreinoAtividadesImpl extends AbstractOrquestradorUnificad
     protected LinkedHashSet<UnificadorFilho> criarSequenciaOrquestradaunificadoresFilhos() {
         LinkedHashSet<UnificadorFilho> set = new LinkedHashSet<UnificadorFilho>();
 
-        set.add(new UnificacaoTreinoCategoriaFicha());
+        set.add(new UnificadorTreinoCategoriaFicha());
         set.add(new UnificadorTreinoFicha());
 
         return set;

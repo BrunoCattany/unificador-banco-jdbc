@@ -1,11 +1,11 @@
-package br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao;
+package unificacao.parametrizacao;
 
-import br.com.pactosolucoes.atualizadb.processo.unificacao.AbstractOrquestradorUnificadorDadosJDBC;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.enums.OperacaoDestinoTransacionalOpcao;
-import br.com.pactosolucoes.atualizadb.processo.unificacao.exception.FalhaProcuraArgumentoException;
+import unificacao.AbstractOrquestradorUnificadorDadosJDBC;
+import unificacao.enums.OperacaoDestinoTransacionalOpcao;
+import unificacao.exception.FalhaProcuraArgumentoException;
 import org.apache.commons.lang3.StringUtils;
 
-import static br.com.pactosolucoes.atualizadb.processo.unificacao.parametrizacao.ParametroObrigatorioUnificacaoEnum.*;
+import static unificacao.parametrizacao.ParametroObrigatorioUnificacaoEnum.*;
 
 /**
  * Representa o conjunto de parâmetros obrigatórios para o funcionado da classe {@link AbstractOrquestradorUnificadorDadosJDBC}. <br>
