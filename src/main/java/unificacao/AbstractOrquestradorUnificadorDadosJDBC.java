@@ -75,6 +75,8 @@ import static negocio.comuns.utilitarias.Uteis.logar;
  * <li>Cria conexões mediante parâmetros via argumentos. Veja o construtor {@link #AbstractOrquestradorUnificadorDadosJDBC(String[])}</li>
  * <li>Gerencia as conexões, podendo ser um cenário transacional ou não, vulgo parâmetro {@link ParametroObrigatorioUnificacaoEnum#OPERACAO_DESTINO_TRANSACIONAL}</li>
  * <li>Trata exceções e loga todo o processo de unificação - Veja em {@link #tratarExcecaoExecucaounificacao}</li>
+ * <li>Através do método utilitário {@link #realizarUnificacaoViaReflection(ConnectionUnificacao, ConnectionUnificacao, Class)},
+ * é possível que as consultas e inserções da unificação da tabela em questão e também considerando as referências de chave estrangeiras, sejam completamente feitas via Reflection</li>
  * </ul>
  *
  * <hr>
